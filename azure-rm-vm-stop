@@ -43,10 +43,6 @@ function LoginOnAutomation(
 ### ServicePrincipal Login
 $Login = LoginOnAutomation $SubscriptionId $AutomationConnectionName $AutomationCertificateName
 
-#if you need select subscription 
-#$SubscriptionId = Get-AutomationVariable -Name 'Hoge-SubscriptionId'
-#Select-AzureRmSubscription -SubscriptionId $SubscriptionId
-
 ######################### Stop VM #########################
 
 #get VMs
