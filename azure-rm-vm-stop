@@ -1,13 +1,55 @@
-#login
-$Credential = Get-AutomationPSCredential -Name 'Hoge-Credential'
-Login-AzureRmAccount -Credential $Credential
+param (
+	[Parameter(Mandatory=$true)][string]$SubscriptionId,
+	[Parameter(Mandatory=$true)][string]$ResourceGroupName,
+ 	[Parameter(Mandatory=$false)][string]$AutomationConnectionName = 'AzureRunAsConnection',
+  	[Parameter(Mandatory=$false)][string]$AutomationCertificateName = 'AzureRunAsCertificate'
+ )
+
+######################### functions #########################
+
+function LoginOnAutomation(
+    [string] $SubscriptionId,
+    [string] $AutomationConnectionName = 'AzureRunAsConnection',
+    [string] $AutomationCertificateName = 'AzureRunAsCertificate'){
+
+    $Certificate = Get-AutomationCertificate  `
+				-Name $AutomationCertificateName  `
+			 	-ErrorAction Stop
+
+    $Connection = Get-AutomationConnection  `
+				    -Name $AutomationConnectionName `
+				    -ErrorAction Stop
+
+    ### Add-AzureRMAccount for load needed assemblies
+    $Account = Add-AzureRMAccount  `
+	    -ServicePrincipal  `
+	    -Tenant $Connection.TenantID  `
+	    -ApplicationId $Connection.ApplicationID  `
+	    -CertificateThumbprint $Connection.CertificateThumbprint `
+	    -ErrorAction Stop
+    Set-AzureRmContext -SubscriptionID $SubscriptionId	
+
+    return @{
+        Certificate = $Certificate
+        Connection = $Connection
+        Account = $Account
+        TenantId = $Connection.TenantID
+        ClientId = $Connection.ApplicationID
+    }    
+}
+
+######################### Login #########################
+
+### ServicePrincipal Login
+$Login = LoginOnAutomation $SubscriptionId $AutomationConnectionName $AutomationCertificateName
 
 #if you need select subscription 
 #$SubscriptionId = Get-AutomationVariable -Name 'Hoge-SubscriptionId'
 #Select-AzureRmSubscription -SubscriptionId $SubscriptionId
 
+######################### Stop VM #########################
+
 #get VMs
-$ResourceGroupName = Get-AutomationVariable -Name 'Hoge-ResourceGroupName'
 $VMList = Get-AzureRmVM -ResourceGroupName $ResourceGroupName
 
 #you can view the output object of Get-AzureRmVM
@@ -38,5 +80,3 @@ foreach($VM in $VMList){
 		Write-Output ("[" + (Get-Date -format "yyyy-MM-dd HH:mm:ss") + "] " + ("skip to stop " + $VM.Name))
 	}
 }
-
-
